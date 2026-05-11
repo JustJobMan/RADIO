@@ -1,5 +1,4 @@
 flask
 flask-socketio
 websockets
-eventlet
 requests
