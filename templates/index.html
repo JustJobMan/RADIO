@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>투네이션 알림</title>
+  <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+  <style>
+    body {
+      background: transparent;
+      margin: 0;
+      font-family: sans-serif;
+    }
+    .alert-box {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.85);
+      color: white;
+      padding: 20px 40px;
+      border-radius: 15px;
+      font-size: 22px;
+      display: none;
+      text-align: center;
+      min-width: 300px;
+    }
+    .nickname { font-weight: bold; font-size: 26px; color: #FFD700; }
+    .amount { color: #00FF99; margin: 8px 0; }
+    .message { font-size: 18px; }
+  </style>
+</head>
+<body>
+  <div class="alert-box" id="alert">
+    <div class="nickname" id="nickname"></div>
+    <div class="amount" id="amount"></div>
+    <div class="message" id="message"></div>
+  </div>
+
+  <script>
+    const socket = io();
+    socket.on('donation', (data) => {
+      console.log('후원 데이터:', data);
+      document.getElementById('nickname').textContent = data.nickname || '익명';
+      document.getElementById('amount').textContent = (data.amount || 0).toLocaleString() + '원';
+      document.getElementById('message').textContent = data.message || '';
+      
+      const box = document.getElementById('alert');
+      box.style.display = 'block';
+      setTimeout(() => box.style.display = 'none', 5000);
+    });
+  </script>
+</body>
+</html>
