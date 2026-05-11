@@ -2,8 +2,7 @@ import asyncio
 import websockets
 import json
 import threading
-import firebase_admin
-from firebase_admin import credentials, db
+import requests
 from flask import Flask, render_template
 from flask_socketio import SocketIO
 
@@ -11,29 +10,22 @@ app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 TOON_WS_URL = "wss://ws.toon.at/eyJhdXRoIjoiM2Q3MTMzNDA0OGFhNmQ5MTM3YjAyMDIyN2Y3ZmFkNzgiLCJzZXJ2aWNlIjoiYWxlcnQiLCJ0eXBlIjowLCJsYW5ndWFnZSI6ImtvIn0"
+FIREBASE_URL = "https://notan-cb053-default-rtdb.firebaseio.com"
 
-# Firebase Admin 초기화
-cred = credentials.Certificate("firebase-key.json")
-firebase_admin.initialize_app(cred, {
-    'databaseURL': 'https://notan-cb053-default-rtdb.firebaseio.com'
-})
+def get_funding():
+    res = requests.get(f"{FIREBASE_URL}/funding.json")
+    return res.json() or {"currentAmount": 0, "targetAmount": 50000, "name": "펀딩"}
 
 def update_funding(amount, name):
-    funding_ref = db.reference("funding")
+    data = get_funding()
     
-    def transaction_fn(current_data):
-        if current_data is None:
-            current_data = {"currentAmount": 0, "targetAmount": 50000, "name": "펀딩"}
-        
-        current_data["currentAmount"] = (current_data.get("currentAmount") or 0) + amount
-        
-        # 목표 달성시 자동으로 +5만원
-        while current_data["currentAmount"] >= current_data.get("targetAmount", 50000):
-            current_data["targetAmount"] = (current_data.get("targetAmount") or 50000) + 50000
-        
-        return current_data
+    data["currentAmount"] = (data.get("currentAmount") or 0) + amount
     
-    funding_ref.transaction(transaction_fn)
+    # 목표 달성시 자동으로 +5만원
+    while data["currentAmount"] >= data.get("targetAmount", 50000):
+        data["targetAmount"] = (data.get("targetAmount") or 50000) + 50000
+    
+    requests.patch(f"{FIREBASE_URL}/funding.json", json=data)
     print(f"Firebase 업데이트: {name}님 {amount}원 후원")
 
 async def connect_toonation():
@@ -45,7 +37,6 @@ async def connect_toonation():
                     data = await ws.recv()
                     parsed = json.loads(data)
                     
-                    # code 101 = 후원 이벤트
                     if parsed.get("code") == 101:
                         content = parsed.get("content", {})
                         amount = content.get("amount", 0)
@@ -53,11 +44,8 @@ async def connect_toonation():
                         message = content.get("message", "")
                         
                         print(f"후원 감지: {name}님 {amount}원 - {message}")
-                        
-                        # Firebase 업데이트
                         update_funding(amount, name)
                         
-                        # 시청자 페이지에 실시간 알림
                         socketio.emit('donation', {
                             "amount": amount,
                             "name": name,
