@@ -61,4 +61,4 @@ if __name__ == '__main__':
     t = threading.Thread(target=start_toonation)
     t.daemon = True
     t.start()
-    socketio.run(app, host='0.0.0.0', port=10000, use_reloader=False)
+socketio.run(app, host='0.0.0.0', port=10000, use_reloader=False, allow_unsafe_werkzeug=True)
