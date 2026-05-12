@@ -27,6 +27,7 @@ def update_funding(amount, name):
 async def connect_toonation():
     while True:
         try:
+            print("투네이션 연결 시도 중...")
             async with websockets.connect(TOON_WS_URL) as ws:
                 print("투네이션 연결 성공!")
                 while True:
@@ -45,7 +46,7 @@ async def connect_toonation():
                             "message": message
                         })
         except Exception as e:
-            print(f"연결 끊김: {e}, 5초 후 재연결...")
+            print(f"연결 끊김 상세 에러: {type(e).__name__}: {e}")
             await asyncio.sleep(5)
 
 def start_toonation():
@@ -61,4 +62,4 @@ if __name__ == '__main__':
     t = threading.Thread(target=start_toonation)
     t.daemon = True
     t.start()
-socketio.run(app, host='0.0.0.0', port=10000, use_reloader=False, allow_unsafe_werkzeug=True)
+    socketio.run(app, host='0.0.0.0', port=10000, use_reloader=False, allow_unsafe_werkzeug=True)
